@@ -1,31 +1,27 @@
 package com.ctrip.framework.apollo.util.http;
 
-import com.google.common.base.Charsets;
-import com.google.common.base.Function;
-import com.google.common.io.BaseEncoding;
-import com.google.gson.Gson;
-
-import com.ctrip.framework.apollo.exceptions.ApolloConfigException;
-import com.ctrip.framework.apollo.exceptions.ApolloConfigStatusCodeException;
-import com.ctrip.framework.apollo.util.ConfigUtil;
-
-import org.unidal.helper.Files;
-import org.unidal.lookup.annotation.Inject;
-import org.unidal.lookup.annotation.Named;
-
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import com.ctrip.framework.apollo.build.ApolloInjector;
+import com.ctrip.framework.apollo.exceptions.ApolloConfigException;
+import com.ctrip.framework.apollo.exceptions.ApolloConfigStatusCodeException;
+import com.ctrip.framework.apollo.util.ConfigUtil;
+import com.google.common.base.Function;
+import com.google.common.io.BaseEncoding;
+import com.google.common.io.CharStreams;
+import com.google.gson.Gson;
+import java.nio.charset.StandardCharsets;
+
 /**
  * @author Jason Song(song_s@ctrip.com)
  */
-@Named(type = HttpUtil.class)
 public class HttpUtil {
-  @Inject
   private ConfigUtil m_configUtil;
   private Gson gson;
   private String basicAuth;
@@ -34,6 +30,7 @@ public class HttpUtil {
    * Constructor.
    */
   public HttpUtil() {
+    m_configUtil = ApolloInjector.getInstance(ConfigUtil.class);
     gson = new Gson();
     try {
       basicAuth = "Basic " + BaseEncoding.base64().encode("user:".getBytes("UTF-8"));
@@ -82,7 +79,7 @@ public class HttpUtil {
 
   private <T> HttpResponse<T> doGetWithSerializeFunction(HttpRequest httpRequest,
                                                          Function<String, T> serializeFunction) {
-    InputStream is = null;
+    InputStreamReader isr = null;
     int statusCode;
     try {
       HttpURLConnection conn = (HttpURLConnection) new URL(httpRequest.getUrl()).openConnection();
@@ -108,8 +105,8 @@ public class HttpUtil {
       statusCode = conn.getResponseCode();
 
       if (statusCode == 200) {
-        is = conn.getInputStream();
-        String content = Files.IO.INSTANCE.readFrom(is, Charsets.UTF_8.name());
+        isr = new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8);
+        String content = CharStreams.toString(isr);
         return new HttpResponse<>(statusCode, serializeFunction.apply(content));
       }
 
@@ -120,10 +117,10 @@ public class HttpUtil {
     } catch (Throwable ex) {
       throw new ApolloConfigException("Could not complete get operation", ex);
     } finally {
-      if (is != null) {
+      if (isr != null) {
         try {
-          is.close();
-        } catch (IOException ex) {
+          isr.close();
+        } catch (IOException e) {
           // ignore
         }
       }
