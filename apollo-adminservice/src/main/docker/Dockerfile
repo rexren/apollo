@@ -1,18 +1,17 @@
 # Dockerfile for apollo-adminservice
-# Build with:
-# docker build -t apollo-adminservice .
-# Run with:
-# docker run -p 8090:8090 -d --name apollo-adminservice apollo-adminservice
+# 1. Copy apollo-adminservice-${VERSION}-github.zip to current directory
+# 2. Build with: docker build -t apollo-adminservice .
+# 3. Run with: docker run -p 8090:8090 -d -v /tmp/logs:/opt/logs --name apollo-adminservice apollo-adminservice
 
 FROM openjdk:8-jre-alpine
 MAINTAINER ameizi <sxyx2008@163.com>
 
-ENV VERSION 0.8.0
+ENV VERSION 1.4.0-SNAPSHOT
 
-RUN echo "http://mirrors.aliyun.com/alpine/v3.6/main" > /etc/apk/repositories \
-    && echo "http://mirrors.aliyun.com/alpine/v3.6/community" >> /etc/apk/repositories \
+RUN echo "http://mirrors.aliyun.com/alpine/v3.8/main" > /etc/apk/repositories \
+    && echo "http://mirrors.aliyun.com/alpine/v3.8/community" >> /etc/apk/repositories \
     && apk update upgrade \
-    && apk add --no-cache unzip curl bash tzdata \
+    && apk add --no-cache procps unzip curl bash tzdata \
     && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo "Asia/Shanghai" > /etc/timezone
 
